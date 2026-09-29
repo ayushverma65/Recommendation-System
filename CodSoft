@@ -1,0 +1,61 @@
+"""Content-based movie recommendations using genre-tag similarity."""
+
+from __future__ import annotations
+
+import sys
+
+MOVIES = {
+    "Arrival": {"science fiction", "drama", "mystery"},
+    "Interstellar": {"science fiction", "drama", "adventure"},
+    "The Martian": {"science fiction", "adventure", "comedy"},
+    "Blade Runner 2049": {"science fiction", "drama", "mystery"},
+    "Hidden Figures": {"drama", "history"},
+    "The Imitation Game": {"drama", "history", "thriller"},
+    "Knives Out": {"mystery", "comedy", "crime"},
+    "The Grand Budapest Hotel": {"comedy", "adventure", "drama"},
+    "Spider-Man: Into the Spider-Verse": {"animation", "adventure", "science fiction"},
+    "Toy Story": {"animation", "adventure", "comedy"},
+    "Get Out": {"horror", "mystery", "thriller"},
+    "The Dark Knight": {"action", "crime", "drama", "thriller"},
+    "Mad Max: Fury Road": {"action", "adventure", "science fiction"},
+    "Finding Nemo": {"animation", "adventure", "comedy"},
+}
+
+
+def similarity(first: set[str], second: set[str]) -> float:
+    """Jaccard similarity: intersection size divided by union size."""
+    union = first | second
+    return len(first & second) / len(union) if union else 0.0
+
+
+def recommend(title: str, limit: int = 5) -> list[tuple[str, float]]:
+    """Rank other catalog titles by similarity to title's genres."""
+    match = next((name for name in MOVIES if name.casefold() == title.strip().casefold()), None)
+    if match is None:
+        choices = ", ".join(sorted(MOVIES))
+        raise ValueError(f"Unknown title. Available movies: {choices}")
+    ranked = [(other, similarity(MOVIES[match], genres))
+              for other, genres in MOVIES.items() if other != match]
+    return sorted(ranked, key=lambda item: (-item[1], item[0]))[:limit]
+
+
+def main() -> None:
+    title = " ".join(sys.argv[1:]).strip()
+    if not title:
+        print("Movie Recommendation System")
+        print("Available movies:")
+        print("  " + "\n  ".join(sorted(MOVIES)))
+        title = input("\nChoose a movie: ").strip()
+    try:
+        results = recommend(title)
+    except ValueError as error:
+        print(error)
+        raise SystemExit(2) from None
+
+    print(f"\nBecause you liked {title.strip()}, you might enjoy:")
+    for rank, (movie, score) in enumerate(results, start=1):
+        print(f"{rank}. {movie} (genre match: {score:.0%})")
+
+
+if __name__ == "__main__":
+    main()
